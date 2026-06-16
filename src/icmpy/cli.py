@@ -4,9 +4,11 @@ from pathlib import Path
 from typing import Annotated
 
 from rich.console import Console
-from typer import Context, Exit, Option, Typer
+from typer import Argument, Context, Exit, Option, Typer
 
 from icmpy import __version__
+from icmpy.scaffold import create_workspace
+from icmpy.validator import validate_workspace
 
 console = Console()
 
@@ -49,7 +51,7 @@ def main(
 @app.command()
 def init(
     ctx: Context,
-    name: Annotated[str, "Name of the workspace directory to create"],
+    name: Annotated[str, Argument(help="Name of the workspace directory to create")],
     path: Annotated[
         Path | None,
         Option("--path", help="Directory in which to create the workspace"),
@@ -58,17 +60,20 @@ def init(
     """Create a new ICM workspace scaffold."""
     target = (path or Path.cwd()) / name
     dry_run = ctx.obj.get("dry_run", False)
-    verbose = ctx.obj.get("verbose", 0)
-    console.print(f"[bold]icmp init[/bold] {name}")
+    verbose: int = ctx.obj.get("verbose", 0)
+
     if dry_run:
-        console.print(f"Would create workspace at {target}")
+        console.print(f"[dry-run] Would create ICM workspace at: {target}")
         return
 
-    # Placeholder for scaffold logic
-    target.mkdir(parents=True, exist_ok=True)
-    console.print(f"Created workspace at {target}")
+    create_workspace(target)
+    console.print(f"[green]Created ICM workspace:[/green] {target}")
+
     if verbose:
-        console.print("Layer 0 (CLAUDE.md) and Layer 1 (CONTEXT.md) scaffolds written.")
+        console.print("  - CLAUDE.md (Layer 0: workspace identity)")
+        console.print("  - CONTEXT.md (Layer 1: workspace routing)")
+        console.print("  - _config/voice.md (Layer 3: reference material)")
+        console.print("  - stages/ (Layer 2: add numbered stage folders next)")
 
 
 @app.command()
@@ -106,7 +111,7 @@ def stage_list(
 @stage_app.command("run")
 def stage_run(
     ctx: Context,
-    stage: Annotated[str, "Stage number or name to run"],
+    stage: Annotated[str, Argument(help="Stage number or name to run")],
     workspace: Annotated[
         Path,
         Option("--workspace", "-w", help="Path to the workspace"),
