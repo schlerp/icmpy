@@ -14,6 +14,7 @@ runner = CliRunner()
 
 def test_create_workspace_scaffolds_files(tmp_path: Path) -> None:
     target = tmp_path / "my_workspace"
+    target.mkdir(parents=True)
     create_workspace(target)
 
     assert target.is_dir()
@@ -23,9 +24,10 @@ def test_create_workspace_scaffolds_files(tmp_path: Path) -> None:
     assert (target / "stages").is_dir()
 
 
-def test_create_workspace_fails_if_exists(tmp_path: Path) -> None:
+def test_create_workspace_fails_if_not_empty(tmp_path: Path) -> None:
     target = tmp_path / "existing"
     target.mkdir()
+    (target / "file.txt").write_text("hello")
     with pytest.raises(FileExistsError):
         create_workspace(target)
 

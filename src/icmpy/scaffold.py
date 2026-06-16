@@ -70,16 +70,19 @@ def create_workspace(target: Path) -> None:
 
     Does not create numbered stage folders — those are added later by the user
     or by `icmp build`.
+
+    Raises:
+        FileExistsError: if *target* already exists and is not empty.
     """
-    if target.exists():
-        msg = f"Workspace already exists: {target}"
+    if target.exists() and any(target.iterdir()):
+        msg = f"Workspace already exists and is not empty: {target}"
         raise FileExistsError(msg)
 
-    target.mkdir(parents=True)
+    target.mkdir(parents=True, exist_ok=True)
     config_dir = target / "_config"
     stages_dir = target / "stages"
-    config_dir.mkdir()
-    stages_dir.mkdir()
+    config_dir.mkdir(exist_ok=True)
+    stages_dir.mkdir(exist_ok=True)
 
     name = target.name
 

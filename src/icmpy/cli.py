@@ -80,12 +80,20 @@ def init(
 def validate(
     ctx: Context,
     workspace: Annotated[
-        Path,
+        Path | None,
         Option("--workspace", "-w", help="Path to the workspace to validate"),
-    ] = Path.cwd(),
+    ] = None,
 ) -> None:
     """Validate an ICM workspace structure."""
-    console.print(f"[bold]icmp validate[/bold] {workspace}")
+    workspace_path = workspace or Path.cwd()
+    result = validate_workspace(workspace_path)
+    if result.ok:
+        console.print(f"[green]Workspace is a valid ICM structure:[/green] {workspace_path}")
+    else:
+        console.print(f"[red]Workspace validation failed:[/red] {workspace_path}")
+        for error in result.errors:
+            console.print(f"  • {error}")
+        raise Exit(code=1)
 
 
 stage_app = Typer(
