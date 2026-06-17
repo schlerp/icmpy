@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Annotated
-
-import pytest
 from typer.testing import CliRunner
 
 from icmpy.cli import app
-
 
 runner = CliRunner()
 

@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
-
-import pytest
 
 from icmpy.scaffold import create_workspace
 from icmpy.stages import discover_stages, find_stage
@@ -16,10 +13,36 @@ def _write_valid_workspace(path: Path) -> None:
     research.mkdir()
     script.mkdir()
     (research / "CONTEXT.md").write_text(
-        "# Research\n\n## Inputs\n\n- source material\n\n## Process\n\nAnalyze.\n\n## Outputs\n\n- summary.md\n"
+        """# Research
+
+## Inputs
+
+- source material
+
+## Process
+
+Analyze.
+
+## Outputs
+
+- summary.md
+"""
     )
     (script / "CONTEXT.md").write_text(
-        "# Script\n\n## Inputs\n\n- summary.md\n\n## Process\n\nWrite.\n\n## Outputs\n\n- script.md\n"
+        """# Script
+
+## Inputs
+
+- summary.md
+
+## Process
+
+Write.
+
+## Outputs
+
+- script.md
+"""
     )
 
 

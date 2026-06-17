@@ -8,7 +8,6 @@ from typer.testing import CliRunner
 from icmpy.cli import app
 from icmpy.scaffold import create_workspace
 
-
 runner = CliRunner()
 
 
@@ -18,7 +17,20 @@ def _write_valid_workspace(path: Path) -> None:
     research = stages / "01_research"
     research.mkdir()
     (research / "CONTEXT.md").write_text(
-        "# Research\n\n## Inputs\n\n- Source material\n\n## Process\n\nAnalyze.\n\n## Outputs\n\n- summary.md\n"
+        """# Research
+
+## Inputs
+
+- Source material
+
+## Process
+
+Analyze.
+
+## Outputs
+
+- summary.md
+"""
     )
 
 

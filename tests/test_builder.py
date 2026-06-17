@@ -8,9 +8,9 @@ import pytest
 from icmpy.builder import (
     TemplateError,
     build_workspace,
+    list_templates,
     load_questionnaire,
     load_template_manifest_entry,
-    list_templates,
 )
 
 

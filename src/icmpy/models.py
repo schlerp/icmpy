@@ -70,7 +70,9 @@ class WorkspaceConfig(BaseModel):
 
     @field_validator("stages")
     @classmethod
-    def _stages_must_have_unique_directories(cls, stages: list[StageContract]) -> list[StageContract]:
+    def _stages_must_have_unique_directories(
+        cls, stages: list[StageContract]
+    ) -> list[StageContract]:
         directories = [stage.directory for stage in stages]
         if len(directories) != len(set(directories)):
             msg = "Stage directories must be unique"

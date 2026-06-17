@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from icmpy.builder import build_workspace, list_templates, templates_root
 
 

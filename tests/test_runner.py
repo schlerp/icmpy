@@ -5,9 +5,8 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from icmpy.cli import app
-from icmpy.scaffold import create_workspace
 from icmpy.runner import assemble_context_bundle, render_context_bundle
-
+from icmpy.scaffold import create_workspace
 
 runner = CliRunner()
 

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, BaseLoader
+from jinja2 import BaseLoader, Environment, FileSystemLoader
 
 from icmpy.scaffold import CLAUDE_MD_TEMPLATE, CONTEXT_MD_TEMPLATE, VOICE_MD_TEMPLATE
 from icmpy.validator import validate_workspace
@@ -16,7 +16,9 @@ class TemplateError(Exception):
 
 def templates_root() -> Path:
     """Return the filesystem root of the built-in templates package."""
-    return Path(__import__("icmpy").__file__).parent / "templates"
+    import icmpy
+
+    return Path(icmpy.__file__).parent / "templates"
 
 
 def _templates_root() -> Path:

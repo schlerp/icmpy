@@ -3,9 +3,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-import pytest
-
-from icmpy.validator import ValidationResult, validate_workspace
+from icmpy.validator import validate_workspace
 
 
 def _write_valid_workspace(path: Path) -> None:
@@ -16,7 +14,20 @@ def _write_valid_workspace(path: Path) -> None:
     research = stages / "01_research"
     research.mkdir()
     (research / "CONTEXT.md").write_text(
-        "# Research\n\n## Inputs\n\n- Source material\n\n## Process\n\nAnalyze.\n\n## Outputs\n\n- summary.md\n"
+        """# Research
+
+## Inputs
+
+- Source material
+
+## Process
+
+Analyze.
+
+## Outputs
+
+- summary.md
+"""
     )
 
 

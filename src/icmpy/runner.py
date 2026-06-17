@@ -100,9 +100,15 @@ def render_context_bundle(bundle: dict[str, Any]) -> str:
         parts.append("")
 
     if bundle["layer_0_identity"]:
-        _add(f"Layer {ContextLayer.WORKSPACE_IDENTITY} (Workspace Identity)", bundle["layer_0_identity"])
+        _add(
+            f"Layer {ContextLayer.WORKSPACE_IDENTITY} (Workspace Identity)",
+            bundle["layer_0_identity"],
+        )
     if bundle["layer_1_routing"]:
-        _add(f"Layer {ContextLayer.WORKSPACE_ROUTING} (Workspace Routing)", bundle["layer_1_routing"])
+        _add(
+            f"Layer {ContextLayer.WORKSPACE_ROUTING} (Workspace Routing)",
+            bundle["layer_1_routing"],
+        )
     if bundle["layer_2_contract"]:
         _add(
             f"Layer {ContextLayer.STAGE_CONTRACT} (Stage Contract: {bundle['stage_name']})",

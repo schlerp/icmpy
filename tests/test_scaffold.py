@@ -8,7 +8,6 @@ from typer.testing import CliRunner
 from icmpy.cli import app
 from icmpy.scaffold import CLAUDE_MD_TEMPLATE, CONTEXT_MD_TEMPLATE, create_workspace
 
-
 runner = CliRunner()
 
 

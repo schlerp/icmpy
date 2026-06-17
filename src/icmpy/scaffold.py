@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 CLAUDE_MD_TEMPLATE = """# {name} — ICM Workspace
 
 This is an [Interpretable Context Methodology](https://github.com/eduba/icmpy) (ICM) workspace.
@@ -12,7 +11,8 @@ This is an [Interpretable Context Methodology](https://github.com/eduba/icmpy) (
 - `CONTEXT.md` — Workspace-level routing (Layer 1)
 - `stages/` — Numbered stage folders, each with its own `CONTEXT.md` contract (Layer 2)
 - `_config/` — Shared reference material such as voice, style, and conventions (Layer 3)
-- Each stage's `output/` directory holds working artifacts produced and consumed during runs (Layer 4)
+- Each stage's `output/` directory holds working artifacts produced and consumed
+  during runs (Layer 4)
 
 ## Usage
 
