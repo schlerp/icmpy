@@ -41,11 +41,12 @@ def test_render_context_bundle_includes_layers(tmp_path: Path) -> None:
     _write_valid_workspace(tmp_path)
     bundle = assemble_context_bundle(tmp_path, "01")
     rendered = render_context_bundle(bundle)
-    assert "Layer 0" in rendered
-    assert "Layer 1" in rendered
-    assert "Layer 2" in rendered
-    assert "Layer 3" in rendered
-    assert "Layer 4" in rendered
+    assert "# Layer 0" in rendered
+    assert "# Layer 1" in rendered
+    assert "# Layer 2" in rendered
+    assert "# Layer 3" in rendered
+    assert "# Layer 4" in rendered
+    assert "## file:" in rendered
     assert "topic_brief.md" in rendered
 
 

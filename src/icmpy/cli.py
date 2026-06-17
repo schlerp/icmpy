@@ -193,6 +193,30 @@ def stage_run(
         console.print(f"[red]Error:[/red] {exc}")
         raise Exit(code=1) from exc
 
+    from icmpy.stages import find_stage
+
+    stage_info = find_stage(workspace, stage)
+    if stage_info is None:
+        console.print(f"[red]Stage not found:[/red] {stage}")
+        raise Exit(code=1)
+
+    # Warn if the stage inputs are not yet populated
+    missing_inputs = []
+    for inp in stage_info.inputs:
+        if inp.startswith("Layer 4 (working):"):
+            rel = inp.split(":", 1)[1].strip().strip("`")
+            candidate = stage_info.path / rel
+            if not candidate.exists():
+                missing_inputs.append(rel)
+    if missing_inputs:
+        console.print(
+            f"[yellow]Note:[/yellow] stage '{stage_info.name}' is missing "
+            "expected working artifacts:"
+        )
+        for missing in missing_inputs:
+            console.print(f"  • {missing}")
+        console.print("The agent may need you to create these before it can complete the stage.")
+
     rendered = render_context_bundle(bundle)
 
     from icmpy.tokens import estimate_tokens
@@ -241,10 +265,15 @@ def build(
 
     templates = list_templates()
     if template is None:
-        console.print("Available built-in templates:")
+        from rich.table import Table
+
+        table = Table(title="Available built-in templates")
+        table.add_column("Template", style="cyan")
+        table.add_column("Pipeline")
         for entry in templates:
-            console.print(f"  • {entry['name']} — {entry['description']}")
-        console.print("\nUse --template <name> to select one.")
+            table.add_row(entry["name"], entry["description"])
+        console.print(table)
+        console.print("\nUse [bold]icmp build --template <name>[/bold] to select one.")
         raise Exit(code=1)
 
     try:
@@ -264,7 +293,13 @@ def build(
         key = item["key"]
         question = item["question"]
         default = item.get("default", "")
-        value = typer.prompt(question, default=default)
+        qtype = item.get("type", "text")
+        if qtype == "integer":
+            value = str(typer.prompt(question, default=int(default) if default else 0, type=int))
+        elif qtype == "confirm":
+            value = "yes" if typer.confirm(question, default=bool(default)) else "no"
+        else:
+            value = typer.prompt(question, default=default)
         answers[key] = value
 
     try:

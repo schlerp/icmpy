@@ -17,6 +17,7 @@ class StageInfo:
     status: str
     inputs: list[str]
     outputs: list[str]
+    path: Path
 
 
 def _is_stage_folder(name: str) -> bool:
@@ -72,6 +73,7 @@ def discover_stages(workspace_path: Path) -> list[StageInfo]:
                 status=status,
                 inputs=contract["inputs"],
                 outputs=contract["outputs"],
+                path=stage_dir,
             )
         )
 

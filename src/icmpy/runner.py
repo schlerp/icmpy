@@ -95,7 +95,8 @@ def render_context_bundle(bundle: dict[str, Any]) -> str:
     parts: list[str] = []
 
     def _add(heading: str, content: str) -> None:
-        parts.append(f"=== {heading} ===")
+        parts.append(f"# {heading}")
+        parts.append("")
         parts.append(content)
         parts.append("")
 
@@ -116,16 +117,20 @@ def render_context_bundle(bundle: dict[str, Any]) -> str:
         )
 
     if bundle["layer_3_reference"]:
-        parts.append(f"=== Layer {ContextLayer.REFERENCE_MATERIAL} (Reference Material) ===")
+        parts.append(f"# Layer {ContextLayer.REFERENCE_MATERIAL} (Reference Material)")
+        parts.append("")
         for path, content in bundle["layer_3_reference"]:
-            parts.append(f"--- file: {path} ---")
+            parts.append(f"## file: {path}")
+            parts.append("")
             parts.append(content if content is not None else "[file not found]")
             parts.append("")
 
     if bundle["layer_4_working"]:
-        parts.append(f"=== Layer {ContextLayer.WORKING_ARTIFACTS} (Working Artifacts) ===")
+        parts.append(f"# Layer {ContextLayer.WORKING_ARTIFACTS} (Working Artifacts)")
+        parts.append("")
         for path, content in bundle["layer_4_working"]:
-            parts.append(f"--- file: {path} ---")
+            parts.append(f"## file: {path}")
+            parts.append("")
             parts.append(content if content is not None else "[file not found]")
             parts.append("")
 
