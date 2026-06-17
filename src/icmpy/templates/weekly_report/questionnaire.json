@@ -1,0 +1,7 @@
+[
+  {"key": "workspace_name", "question": "What should the workspace be named?", "type": "text", "default": "weekly-report"},
+  {"key": "report_title", "question": "Report title?", "type": "text"},
+  {"key": "reporting_period", "question": "Reporting period?", "type": "text"},
+  {"key": "audience", "question": "Who is reading this report?", "type": "text"},
+  {"key": "data_source", "question": "Where should metrics be pulled from?", "type": "text", "default": "team dashboard"}
+]

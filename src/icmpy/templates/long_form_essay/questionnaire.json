@@ -1,0 +1,7 @@
+[
+  {"key": "workspace_name", "question": "What should the workspace be named?", "type": "text", "default": "long-form-essay"},
+  {"key": "topic", "question": "What is the essay about?", "type": "text"},
+  {"key": "audience", "question": "Who is the intended reader?", "type": "text"},
+  {"key": "target_word_count", "question": "Target word count?", "type": "integer", "default": 1200},
+  {"key": "angle", "question": "What is the one-sentence angle or thesis?", "type": "text", "default": ""}
+]

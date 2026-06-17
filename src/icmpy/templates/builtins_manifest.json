@@ -9,6 +9,21 @@
       "name": "script-to-animation",
       "description": "Three-stage pipeline: research → script → production",
       "path": "script_to_animation"
+    },
+    {
+      "name": "long-form-essay",
+      "description": "Five-stage pipeline: idea → research → outline → draft → edit",
+      "path": "long_form_essay"
+    },
+    {
+      "name": "course-module",
+      "description": "Five-stage pipeline: learning design → outline → content → slides → assessment",
+      "path": "course_module"
+    },
+    {
+      "name": "weekly-report",
+      "description": "Four-stage pipeline: data → highlights → narrative → final review",
+      "path": "weekly_report"
     }
   ]
 }
