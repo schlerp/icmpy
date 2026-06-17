@@ -1,0 +1,29 @@
+[
+  {
+    "key": "workspace_name",
+    "question": "What should the workspace be named?",
+    "type": "text",
+    "default": "campaign-brief"
+  },
+  {
+    "key": "campaign_name",
+    "question": "Campaign name?",
+    "type": "text"
+  },
+  {
+    "key": "objective",
+    "question": "Primary campaign objective?",
+    "type": "text"
+  },
+  {
+    "key": "audience",
+    "question": "Target audience?",
+    "type": "text"
+  },
+  {
+    "key": "budget",
+    "question": "Budget or time constraints?",
+    "type": "text",
+    "default": "TBD"
+  }
+]

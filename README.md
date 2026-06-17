@@ -86,6 +86,11 @@ Available templates:
 | `feature-spec` | Problem → Requirements → UX Flow → API Spec → PRD |
 | `bug-runbook` | Reproduction → Root Cause → Fix → Validation → Post Mortem |
 | `api-design` | Use Cases → Endpoints → Schemas → Examples → Documentation |
+| `literature-review` | Search → Extraction → Synthesis → Themes → Draft |
+| `competitive-analysis` | Competitors → Feature Grid → Positioning → Strategy Brief |
+| `landing-page` | Value Prop → Outline → Copy → Design Brief → Launch Checklist |
+| `campaign-brief` | Objective → Audience → Messaging → Channel Plan |
+| `client-onboarding` | Discovery → Playbook → Assets → Launch Checklist |
 
 Templates are Jinja2-rendered and come with their own builder questionnaire.
 

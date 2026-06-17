@@ -1,0 +1,30 @@
+[
+  {
+    "key": "workspace_name",
+    "question": "What should the workspace be named?",
+    "type": "text",
+    "default": "literature-review"
+  },
+  {
+    "key": "topic",
+    "question": "Review topic or research question?",
+    "type": "text"
+  },
+  {
+    "key": "field",
+    "question": "Field or discipline?",
+    "type": "text"
+  },
+  {
+    "key": "time_range",
+    "question": "Publication time range to focus on?",
+    "type": "text",
+    "default": "last 5 years"
+  },
+  {
+    "key": "min_sources",
+    "question": "Minimum number of sources?",
+    "type": "integer",
+    "default": 10
+  }
+]

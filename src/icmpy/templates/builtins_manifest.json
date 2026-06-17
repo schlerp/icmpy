@@ -39,6 +39,31 @@
       "name": "api-design",
       "description": "Five-stage pipeline: use cases → endpoints → schemas → examples → docs",
       "path": "api_design"
+    },
+    {
+      "name": "literature-review",
+      "description": "Five-stage pipeline: search → extraction → synthesis → themes → draft",
+      "path": "literature_review"
+    },
+    {
+      "name": "competitive-analysis",
+      "description": "Four-stage pipeline: competitors → feature grid → positioning → strategy brief",
+      "path": "competitive_analysis"
+    },
+    {
+      "name": "landing-page",
+      "description": "Five-stage pipeline: value prop → outline → copy → design brief → launch checklist",
+      "path": "landing_page"
+    },
+    {
+      "name": "campaign-brief",
+      "description": "Four-stage pipeline: objective → audience → messaging → channel plan",
+      "path": "campaign_brief"
+    },
+    {
+      "name": "client-onboarding",
+      "description": "Four-stage pipeline: discovery → playbook → assets → launch checklist",
+      "path": "client_onboarding"
     }
   ]
 }
