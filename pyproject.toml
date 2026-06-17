@@ -34,6 +34,14 @@ dev = [
     "mypy>=1.0",
 ]
 
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0",
+    "pytest-cov",
+    "ruff>=0.6",
+    "mypy>=1.0",
+]
+
 [project.scripts]
 icmp = "icmpy.cli:app"
 

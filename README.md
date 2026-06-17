@@ -19,8 +19,16 @@ For local development:
 ```bash
 git clone https://github.com/eduba/icmpy.git
 cd icmpy
-uv sync --extra dev
+uv sync
 source .venv/bin/activate
+```
+
+Run checks with `uv run`:
+
+```bash
+uv run pytest
+uv run ruff check src/ tests/
+uv run mypy src/
 ```
 
 ## Quickstart
