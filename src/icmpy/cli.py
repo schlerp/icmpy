@@ -122,7 +122,39 @@ def stage_list(
     ] = Path.cwd(),
 ) -> None:
     """List stages in the current workspace."""
-    console.print(f"[bold]icmp stage list[/bold] {workspace}")
+    from rich.table import Table
+
+    from icmpy.stages import discover_stages
+
+    verbose: int = ctx.obj.get("verbose", 0)
+    result = validate_workspace(workspace)
+    if not result.ok:
+        console.print(f"[red]Invalid workspace:[/red] {workspace}")
+        for error in result.errors:
+            console.print(f"  • {error}")
+        raise Exit(code=1)
+
+    stages = discover_stages(workspace)
+    if not stages:
+        console.print("No numbered stages found.")
+        return
+
+    table = Table(title=f"Stages in {workspace}")
+    table.add_column("#", justify="right", style="cyan")
+    table.add_column("Name")
+    table.add_column("Status")
+    if verbose:
+        table.add_column("Inputs")
+        table.add_column("Outputs")
+
+    for stage in stages:
+        row = [f"{stage.number:02d}", stage.name, stage.status]
+        if verbose:
+            row.append("\n".join(stage.inputs) or "—")
+            row.append("\n".join(stage.outputs) or "—")
+        table.add_row(*row)
+
+    console.print(table)
 
 
 @stage_app.command("run")
