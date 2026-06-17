@@ -165,9 +165,49 @@ def stage_run(
         Path,
         Option("--workspace", "-w", help="Path to the workspace"),
     ] = Path.cwd(),
+    output: Annotated[
+        Path | None,
+        Option("--output", "-o", help="File path to write the context bundle to"),
+    ] = None,
 ) -> None:
     """Assemble and run a single stage's context bundle."""
-    console.print(f"[bold]icmp stage run[/bold] {stage} in {workspace}")
+    dry_run = ctx.obj.get("dry_run", False)
+
+    result = validate_workspace(workspace)
+    if not result.ok:
+        console.print(f"[red]Invalid workspace:[/red] {workspace}")
+        for error in result.errors:
+            console.print(f"  • {error}")
+        raise Exit(code=1)
+
+    from icmpy.runner import assemble_context_bundle, render_context_bundle
+
+    if dry_run:
+        console.print(f"[dry-run] Would assemble context bundle for stage '{stage}'")
+        return
+
+    try:
+        bundle = assemble_context_bundle(workspace, stage)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise Exit(code=1) from exc
+
+    rendered = render_context_bundle(bundle)
+    if output:
+        output.write_text(rendered, encoding="utf-8")
+        console.print(f"[green]Context bundle written to:[/green] {output}")
+    else:
+        console.print(rendered)
+
+    # Ensure the stage has an output directory for later human editing
+    stage_dir = bundle["stage_dir"]
+    (stage_dir / "output").mkdir(exist_ok=True)
+    placeholder = stage_dir / "output" / "_ran.txt"
+    placeholder.write_text(
+        f"Stage '{stage}' context bundle assembled at runtime.\n"
+        "Replace this file with the actual stage outputs.\n",
+        encoding="utf-8",
+    )
 
 
 @app.command()
