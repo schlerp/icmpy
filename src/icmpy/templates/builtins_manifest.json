@@ -1,14 +1,14 @@
 {
   "templates": [
     {
+      "name": "empty",
+      "description": "Minimal ICM workspace scaffold with no stages",
+      "path": "empty"
+    },
+    {
       "name": "script-to-animation",
       "description": "Three-stage pipeline: research → script → production",
       "path": "script_to_animation"
-    },
-    {
-      "name": "slide-deck",
-      "description": "Five-stage pipeline for course deck production",
-      "path": "slide_deck"
     }
   ]
 }

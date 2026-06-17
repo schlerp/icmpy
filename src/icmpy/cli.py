@@ -1,12 +1,21 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
+import typer
 from rich.console import Console
 from typer import Argument, Context, Exit, Option, Typer
 
 from icmpy import __version__
+from icmpy.builder import (
+    TemplateError,
+    build_workspace,
+    list_templates,
+    load_questionnaire,
+    load_template_manifest_entry,
+    templates_root,
+)
 from icmpy.scaffold import create_workspace
 from icmpy.validator import validate_workspace
 
@@ -142,4 +151,43 @@ def build(
     ] = Path.cwd(),
 ) -> None:
     """Build a new workspace from a template and questionnaire."""
-    console.print(f"[bold]icmp build[/bold] template={template} target={target}")
+    dry_run = ctx.obj.get("dry_run", False)
+    verbose: int = ctx.obj.get("verbose", 0)
+
+    templates = list_templates()
+    if template is None:
+        console.print("Available built-in templates:")
+        for entry in templates:
+            console.print(f"  • {entry['name']} — {entry['description']}")
+        console.print("\nUse --template <name> to select one.")
+        raise Exit(code=1)
+
+    try:
+        manifest = load_template_manifest_entry(template)
+        template_dir = templates_root() / manifest["path"]
+        questionnaire = load_questionnaire(template_dir)
+    except TemplateError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise Exit(code=1) from exc
+
+    if dry_run:
+        console.print(f"[dry-run] Would build workspace from template '{template}' into {target}")
+        return
+
+    answers: dict[str, Any] = {}
+    for item in questionnaire:
+        key = item["key"]
+        question = item["question"]
+        default = item.get("default", "")
+        value = typer.prompt(question, default=default)
+        answers[key] = value
+
+    try:
+        workspace_path = build_workspace(template, target, answers, validate=True)
+    except (FileExistsError, TemplateError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise Exit(code=1) from exc
+
+    console.print(f"[green]Built workspace:[/green] {workspace_path}")
+    if verbose:
+        console.print(f"Using template '{template}' with {len(answers)} answers")

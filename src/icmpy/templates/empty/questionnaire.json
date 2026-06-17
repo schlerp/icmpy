@@ -1,0 +1,8 @@
+[
+  {
+    "key": "workspace_name",
+    "question": "What should the workspace be named?",
+    "type": "text",
+    "default": "my-icm-workspace"
+  }
+]
