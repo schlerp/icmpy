@@ -1,0 +1,69 @@
+{
+  "templates": [
+    {
+      "name": "empty",
+      "description": "Minimal ICM workspace scaffold with no stages",
+      "path": "empty"
+    },
+    {
+      "name": "script-to-animation",
+      "description": "Three-stage pipeline: research → script → production",
+      "path": "script_to_animation"
+    },
+    {
+      "name": "long-form-essay",
+      "description": "Five-stage pipeline: idea → research → outline → draft → edit",
+      "path": "long_form_essay"
+    },
+    {
+      "name": "course-module",
+      "description": "Five-stage pipeline: learning design → outline → content → slides → assessment",
+      "path": "course_module"
+    },
+    {
+      "name": "weekly-report",
+      "description": "Four-stage pipeline: data → highlights → narrative → final review",
+      "path": "weekly_report"
+    },
+    {
+      "name": "feature-spec",
+      "description": "Five-stage pipeline: problem → requirements → UX flow → API spec → PRD",
+      "path": "feature_spec"
+    },
+    {
+      "name": "bug-runbook",
+      "description": "Five-stage pipeline: reproduction → root cause → fix → validation → post mortem",
+      "path": "bug_runbook"
+    },
+    {
+      "name": "api-design",
+      "description": "Five-stage pipeline: use cases → endpoints → schemas → examples → docs",
+      "path": "api_design"
+    },
+    {
+      "name": "literature-review",
+      "description": "Five-stage pipeline: search → extraction → synthesis → themes → draft",
+      "path": "literature_review"
+    },
+    {
+      "name": "competitive-analysis",
+      "description": "Four-stage pipeline: competitors → feature grid → positioning → strategy brief",
+      "path": "competitive_analysis"
+    },
+    {
+      "name": "landing-page",
+      "description": "Five-stage pipeline: value prop → outline → copy → design brief → launch checklist",
+      "path": "landing_page"
+    },
+    {
+      "name": "campaign-brief",
+      "description": "Four-stage pipeline: objective → audience → messaging → channel plan",
+      "path": "campaign_brief"
+    },
+    {
+      "name": "client-onboarding",
+      "description": "Four-stage pipeline: discovery → playbook → assets → launch checklist",
+      "path": "client_onboarding"
+    }
+  ]
+}

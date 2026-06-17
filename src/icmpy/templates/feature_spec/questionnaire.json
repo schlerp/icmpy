@@ -1,0 +1,7 @@
+[
+  {"key": "workspace_name", "question": "What should the workspace be named?", "type": "text", "default": "feature-spec"},
+  {"key": "feature_name", "question": "What is the feature called?", "type": "text"},
+  {"key": "problem", "question": "What problem does this feature solve?", "type": "text"},
+  {"key": "target_user", "question": "Who is the primary user?", "type": "text"},
+  {"key": "success_metric", "question": "How will success be measured?", "type": "text", "default": "user adoption"}
+]

@@ -1,0 +1,29 @@
+[
+  {
+    "key": "workspace_name",
+    "question": "What should the workspace be named?",
+    "type": "text",
+    "default": "client-onboarding"
+  },
+  {
+    "key": "client_name",
+    "question": "Client name?",
+    "type": "text"
+  },
+  {
+    "key": "service",
+    "question": "Service or engagement type?",
+    "type": "text"
+  },
+  {
+    "key": "stakeholder",
+    "question": "Primary client stakeholder?",
+    "type": "text"
+  },
+  {
+    "key": "kickoff_date",
+    "question": "Kickoff date?",
+    "type": "text",
+    "default": "TBD"
+  }
+]

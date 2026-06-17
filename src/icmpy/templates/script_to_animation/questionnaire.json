@@ -1,0 +1,19 @@
+[
+  {
+    "key": "workspace_name",
+    "question": "What should the workspace be named?",
+    "type": "text",
+    "default": "script-to-animation"
+  },
+  {
+    "key": "topic",
+    "question": "What is the topic for this video?",
+    "type": "text"
+  },
+  {
+    "key": "target_duration",
+    "question": "Target video duration in seconds?",
+    "type": "integer",
+    "default": 90
+  }
+]

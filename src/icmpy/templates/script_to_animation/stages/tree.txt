@@ -1,0 +1,15 @@
+stages/
+  01_research/
+    CONTEXT.md
+    output/
+  02_script/
+    CONTEXT.md
+    output/
+  03_production/
+    CONTEXT.md
+    output/
+_config/
+  voice.md
+  structure.md
+CLAUDE.md
+CONTEXT.md

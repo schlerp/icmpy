@@ -1,0 +1,7 @@
+[
+  {"key": "workspace_name", "question": "What should the workspace be named?", "type": "text", "default": "api-design"},
+  {"key": "api_name", "question": "What is the API called?", "type": "text"},
+  {"key": "consumer", "question": "Who is the primary consumer?", "type": "text"},
+  {"key": "base_url", "question": "Base URL or path prefix?", "type": "text", "default": "/api/v1"},
+  {"key": "auth_method", "question": "Authentication method?", "type": "text", "default": "bearer token"}
+]

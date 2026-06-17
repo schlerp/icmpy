@@ -1,0 +1,7 @@
+[
+  {"key": "workspace_name", "question": "What should the workspace be named?", "type": "text", "default": "course-module"},
+  {"key": "topic", "question": "What is the module topic?", "type": "text"},
+  {"key": "audience", "question": "Who are the learners?", "type": "text"},
+  {"key": "learning_objective", "question": "What should learners be able to do after this module?", "type": "text"},
+  {"key": "module_duration", "question": "Module duration in minutes?", "type": "integer", "default": 30}
+]

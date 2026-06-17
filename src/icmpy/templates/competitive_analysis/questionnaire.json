@@ -1,0 +1,23 @@
+[
+  {
+    "key": "workspace_name",
+    "question": "What should the workspace be named?",
+    "type": "text",
+    "default": "competitive-analysis"
+  },
+  {
+    "key": "product_area",
+    "question": "Product area being analysed?",
+    "type": "text"
+  },
+  {
+    "key": "market",
+    "question": "Target market or segment?",
+    "type": "text"
+  },
+  {
+    "key": "competitors",
+    "question": "Main competitors to compare?",
+    "type": "text"
+  }
+]

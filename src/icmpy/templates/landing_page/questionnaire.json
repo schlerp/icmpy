@@ -1,0 +1,29 @@
+[
+  {
+    "key": "workspace_name",
+    "question": "What should the workspace be named?",
+    "type": "text",
+    "default": "landing-page"
+  },
+  {
+    "key": "product_name",
+    "question": "Product or offer name?",
+    "type": "text"
+  },
+  {
+    "key": "value_prop",
+    "question": "Core value proposition?",
+    "type": "text"
+  },
+  {
+    "key": "audience",
+    "question": "Target visitor?",
+    "type": "text"
+  },
+  {
+    "key": "cta",
+    "question": "Primary call to action?",
+    "type": "text",
+    "default": "Sign up"
+  }
+]
