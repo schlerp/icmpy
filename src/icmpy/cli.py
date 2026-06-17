@@ -329,8 +329,29 @@ def completion(
     console.print(script)
 
 
-@app.command()
-def build(
+build_app = Typer(
+    name="build",
+    help="Build workspaces from templates",
+    no_args_is_help=True,
+)
+app.add_typer(build_app)
+
+
+@build_app.command("list")
+def build_list() -> None:
+    """List available built-in templates."""
+    from rich.table import Table
+
+    table = Table(title="Available built-in templates")
+    table.add_column("Template", style="cyan")
+    table.add_column("Pipeline")
+    for entry in list_templates():
+        table.add_row(entry["name"], entry["description"])
+    console.print(table)
+
+
+@build_app.command("create")
+def build_create(
     ctx: Context,
     template: Annotated[
         str | None,
@@ -352,17 +373,11 @@ def build(
     dry_run = ctx.obj.get("dry_run", False)
     verbose: int = ctx.obj.get("verbose", 0)
 
-    templates = list_templates()
     if template is None:
-        from rich.table import Table
-
-        table = Table(title="Available built-in templates")
-        table.add_column("Template", style="cyan")
-        table.add_column("Pipeline")
-        for entry in templates:
-            table.add_row(entry["name"], entry["description"])
-        console.print(table)
-        console.print("\nUse [bold]icmp build --template <name>[/bold] to select one.")
+        console.print("[yellow]No template selected.[/yellow]")
+        console.print(
+            "Choose one with [bold]icmp build list[/bold] or pass [bold]--template[/bold]."
+        )
         raise Exit(code=1)
 
     try:

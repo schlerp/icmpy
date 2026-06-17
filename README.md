@@ -44,7 +44,7 @@ icmp validate
 Build a ready-made workspace from a template:
 
 ```bash
-icmp build --template long-form-essay
+icmp build create --template long-form-essay
 ```
 
 Run the first pending stage:
@@ -70,7 +70,13 @@ This prints the assembled context bundle (Layers 0-4) for your agent. Review the
 Build a complete workspace from a template:
 
 ```bash
-icmp build --template script-to-animation
+icmp build create --template script-to-animation
+```
+
+List available templates:
+
+```bash
+icmp build list
 ```
 
 Available templates:
@@ -121,8 +127,9 @@ my-workspace/
 | `icmp init <name>` | Scaffold a new ICM workspace |
 | `icmp validate` | Validate the current workspace structure |
 | `icmp status` | Show workspace health and progress |
-| `icmp build --template <name>` | Build a workspace from a built-in template |
-| `icmp build --answers-file <path>` | Build non-interactively from JSON answers |
+| `icmp build create --template <name>` | Build a workspace from a built-in template |
+| `icmp build create --answers-file <path>` | Build non-interactively from JSON answers |
+| `icmp build list` | List available templates |
 | `icmp stage list` | List stages with status |
 | `icmp stage run <stage>` | Assemble and print a stage's context bundle |
 | `icmp stage run next` | Run the first pending stage |
