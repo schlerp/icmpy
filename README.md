@@ -80,6 +80,9 @@ Available templates:
 |---|---|
 | `empty` | Minimal ICM scaffold with no stages |
 | `script-to-animation` | Research → Script → Production |
+| `long-form-essay` | Idea → Research → Outline → Draft → Edit |
+| `course-module` | Learning design → Outline → Content → Slides → Assessment |
+| `weekly-report` | Data → Highlights → Narrative → Review |
 
 Templates are Jinja2-rendered and come with their own builder questionnaire.
 
