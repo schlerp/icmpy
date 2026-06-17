@@ -172,6 +172,7 @@ def stage_run(
 ) -> None:
     """Assemble and run a single stage's context bundle."""
     dry_run = ctx.obj.get("dry_run", False)
+    verbose: int = ctx.obj.get("verbose", 0)
 
     result = validate_workspace(workspace)
     if not result.ok:
@@ -193,6 +194,18 @@ def stage_run(
         raise Exit(code=1) from exc
 
     rendered = render_context_bundle(bundle)
+
+    from icmpy.tokens import estimate_tokens
+
+    token_count = estimate_tokens(rendered)
+    if token_count > 8000:
+        console.print(
+            f"[yellow]Warning:[/yellow] estimated context is {token_count} tokens "
+            "(recommended upper bound is 8,000)"
+        )
+    elif verbose:
+        console.print(f"Estimated context tokens: {token_count}")
+
     if output:
         output.write_text(rendered, encoding="utf-8")
         console.print(f"[green]Context bundle written to:[/green] {output}")
