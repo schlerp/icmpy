@@ -4,7 +4,7 @@ A command-line scaffolding and orchestration tool for the [Interpretable Context
 
 ICM treats folder structure as agent architecture: numbered stage folders carry prompts as plain markdown files, reference material lives in `_config/`, and working artifacts move through `output/` directories. The result is a sequential, reviewable, human-in-the-loop AI workflow that needs no multi-agent framework.
 
-**icmpy** automates the boring parts: creating workspaces, validating structure, building from templates, and assembling stage-specific context bundles for the orchestrating agent.
+**icmpy** automates the boring parts: creating workspaces, validating structure, building from templates, assembling stage-specific context bundles, and tracking progress.
 
 ## Installation
 
@@ -33,38 +33,29 @@ cd my-workspace
 icmp validate
 ```
 
-Add a stage by hand:
+Build a ready-made workspace from a template:
 
 ```bash
-mkdir -p stages/01_research/output
-cat > stages/01_research/CONTEXT.md <<'EOF'
-# Research
-
-## Inputs
-
-- Layer 4 (working): `output/topic_brief.md`
-
-## Process
-
-Analyze the topic brief and produce a structured research summary.
-
-## Outputs
-
-- `output/research_summary.md`
-EOF
+icmp build --template long-form-essay
 ```
 
-Run the stage:
+Run the first pending stage:
 
 ```bash
-icmp stage run 01
+cd long-form-essay
+icmp stage run next
 ```
 
-This prints the assembled context bundle (Layers 0-4) for your agent. You can also write it to a file:
+This prints the assembled context bundle (Layers 0-4) for your agent. Review the output, then save the agent's response to the stage's `output/` directory before running the next stage.
 
-```bash
-icmp stage run 01 -o bundle.md
-```
+## Core workflow
+
+1. **Scaffold or build** a workspace.
+2. **Review and edit** the generated `CONTEXT.md` contracts and `_config/` reference files.
+3. **Run a stage** to get a focused context bundle.
+4. **Paste the bundle** into your AI tool and capture its output.
+5. **Save the output** to the stage's `output/` folder.
+6. Repeat from step 3 for the next stage.
 
 ## Built-in templates
 
@@ -92,7 +83,11 @@ Available templates:
 | `campaign-brief` | Objective → Audience → Messaging → Channel Plan |
 | `client-onboarding` | Discovery → Playbook → Assets → Launch Checklist |
 
-Templates are Jinja2-rendered and come with their own builder questionnaire.
+Templates are Jinja2-rendered and come with their own builder questionnaire. Use `--answers-file` to skip interactive prompts:
+
+```bash
+icmp build --template landing-page --answers-file answers.json
+```
 
 ## Workspace structure
 
@@ -117,15 +112,45 @@ my-workspace/
 |---|---|
 | `icmp init <name>` | Scaffold a new ICM workspace |
 | `icmp validate` | Validate the current workspace structure |
+| `icmp status` | Show workspace health and progress |
 | `icmp build --template <name>` | Build a workspace from a built-in template |
+| `icmp build --answers-file <path>` | Build non-interactively from JSON answers |
 | `icmp stage list` | List stages with status |
 | `icmp stage run <stage>` | Assemble and print a stage's context bundle |
+| `icmp stage run next` | Run the first pending stage |
+| `icmp completion <bash|zsh|fish>` | Print shell completion script |
 | `icmp --version` | Show version |
 
 Global flags:
 
 - `--dry-run` — show what would happen without writing files
 - `-V` / `--verbose` — increase verbosity
+
+## Context bundles
+
+A context bundle is the plain-text prompt that `icmp stage run` assembles for the current stage. It includes:
+
+- Layer 0: workspace identity (`CLAUDE.md`)
+- Layer 1: workspace routing (`CONTEXT.md`)
+- Layer 2: stage contract (`stages/NN_name/CONTEXT.md`)
+- Layer 3: reference material from `_config/` or stage `references/`
+- Layer 4: working artifacts from previous `output/` directories
+
+The bundle is rendered as markdown with `# Layer N` headings and `## file:` markers, so it is easy to read and paste into any AI tool.
+
+If the estimated token count exceeds 8,000, `icmp` prints a warning because model performance tends to degrade with very long contexts.
+
+## Writing your own template
+
+Templates live under `src/icmpy/templates/` and contain:
+
+- `questionnaire.json` — questions asked during `icmp build`
+- `_config/voice.md` — template-specific reference material
+- `stages/NN_name/CONTEXT.md` — stage contracts
+
+Use Jinja2 syntax (`{{ variable }}`) to substitute questionnaire answers into any file. Add the template to `builtins_manifest.json` to make it discoverable.
+
+See `docs/custom-templates.md` for a full guide.
 
 ## Development
 
@@ -142,6 +167,10 @@ ruff check src/ tests/
 ruff format --check src/ tests/
 mypy src/
 ```
+
+## Contributing
+
+See `CONTRIBUTING.md`.
 
 ## License
 
