@@ -80,6 +80,14 @@ def discover_stages(workspace_path: Path) -> list[StageInfo]:
     return result
 
 
+def next_pending_stage(workspace_path: Path) -> StageInfo | None:
+    """Return the first numbered stage with no populated output directory."""
+    for stage in discover_stages(workspace_path):
+        if stage.status == "pending":
+            return stage
+    return None
+
+
 def find_stage(workspace_path: Path, identifier: str) -> StageInfo | None:
     """Find a stage by number (e.g. '01') or by directory name (e.g. '01_research')."""
     stages = discover_stages(workspace_path)

@@ -160,7 +160,10 @@ def stage_list(
 @stage_app.command("run")
 def stage_run(
     ctx: Context,
-    stage: Annotated[str, Argument(help="Stage number or name to run")],
+    stage: Annotated[
+        str | None,
+        Argument(help="Stage number or name to run (use 'next' for the first pending stage)"),
+    ] = None,
     workspace: Annotated[
         Path,
         Option("--workspace", "-w", help="Path to the workspace"),
@@ -172,7 +175,6 @@ def stage_run(
 ) -> None:
     """Assemble and run a single stage's context bundle."""
     dry_run = ctx.obj.get("dry_run", False)
-    verbose: int = ctx.obj.get("verbose", 0)
 
     result = validate_workspace(workspace)
     if not result.ok:
@@ -182,22 +184,30 @@ def stage_run(
         raise Exit(code=1)
 
     from icmpy.runner import assemble_context_bundle, render_context_bundle
+    from icmpy.stages import find_stage, next_pending_stage
+
+    resolved_stage = stage
+    if resolved_stage is None or resolved_stage.lower() == "next":
+        pending = next_pending_stage(workspace)
+        if pending is None:
+            console.print("[green]All stages are complete.[/green]")
+            return
+        resolved_stage = pending.directory
+        console.print(f"[cyan]Next pending stage:[/cyan] {pending.number:02d} {pending.name}")
 
     if dry_run:
-        console.print(f"[dry-run] Would assemble context bundle for stage '{stage}'")
+        console.print(f"[dry-run] Would assemble context bundle for stage '{resolved_stage}'")
         return
 
     try:
-        bundle = assemble_context_bundle(workspace, stage)
+        bundle = assemble_context_bundle(workspace, resolved_stage)
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise Exit(code=1) from exc
 
-    from icmpy.stages import find_stage
-
-    stage_info = find_stage(workspace, stage)
+    stage_info = find_stage(workspace, resolved_stage)
     if stage_info is None:
-        console.print(f"[red]Stage not found:[/red] {stage}")
+        console.print(f"[red]Stage not found:[/red] {resolved_stage}")
         raise Exit(code=1)
 
     # Warn if the stage inputs are not yet populated
@@ -222,6 +232,7 @@ def stage_run(
     from icmpy.tokens import estimate_tokens
 
     token_count = estimate_tokens(rendered)
+    verbose: int = ctx.obj.get("verbose", 0)
     if token_count > 8000:
         console.print(
             f"[yellow]Warning:[/yellow] estimated context is {token_count} tokens "
@@ -241,10 +252,81 @@ def stage_run(
     (stage_dir / "output").mkdir(exist_ok=True)
     placeholder = stage_dir / "output" / "_ran.txt"
     placeholder.write_text(
-        f"Stage '{stage}' context bundle assembled at runtime.\n"
+        f"Stage '{resolved_stage}' context bundle assembled at runtime.\n"
         "Replace this file with the actual stage outputs.\n",
         encoding="utf-8",
     )
+
+
+@app.command()
+def status(
+    workspace: Annotated[
+        Path,
+        Option("--workspace", "-w", help="Path to the workspace"),
+    ] = Path.cwd(),
+) -> None:
+    """Show a quick health and progress summary for the workspace."""
+    from rich.panel import Panel
+    from rich.table import Table
+
+    from icmpy.stages import discover_stages, next_pending_stage
+
+    result = validate_workspace(workspace)
+    if not result.ok:
+        console.print(Panel("[red]Workspace validation failed[/red]", title=str(workspace)))
+        for error in result.errors:
+            console.print(f"  • {error}")
+        raise Exit(code=1)
+
+    stages = discover_stages(workspace)
+    pending = next_pending_stage(workspace)
+    completed = sum(1 for s in stages if s.status == "completed")
+
+    table = Table(title=f"Workspace status: {workspace.name}")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value")
+    table.add_row("Path", str(workspace))
+    table.add_row("Valid", "yes")
+    table.add_row("Stages", str(len(stages)))
+    table.add_row("Completed", str(completed))
+    table.add_row("Pending", str(len(stages) - completed))
+    if pending:
+        table.add_row("Next stage", f"{pending.number:02d} {pending.name}")
+    else:
+        table.add_row("Next stage", "[green]all done[/green]")
+
+    console.print(table)
+
+
+@app.command()
+def completion(
+    shell: Annotated[
+        str,
+        Argument(help="Shell to generate completion for: bash, zsh, or fish"),
+    ],
+) -> None:
+    """Print shell completion script for icmp.
+
+    Source it with eval, or redirect to your shell's completion directory.
+    """
+    import subprocess
+
+    allowed = {"bash", "zsh", "fish"}
+    if shell not in allowed:
+        console.print(f"[red]Unsupported shell:[/red] {shell}")
+        console.print(f"Supported shells: {', '.join(sorted(allowed))}")
+        raise Exit(code=1)
+
+    try:
+        script = subprocess.check_output(
+            ["icmp", f"--install-completion={shell}"],
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        console.print(f"[red]Failed to generate completion:[/red] {exc}")
+        raise Exit(code=1) from exc
+
+    console.print(script)
 
 
 @app.command()
@@ -258,6 +340,13 @@ def build(
         Path,
         Option("--target", help="Directory in which to build the workspace"),
     ] = Path.cwd(),
+    answers_file: Annotated[
+        Path | None,
+        Option(
+            "--answers-file",
+            help="JSON file with questionnaire answers (skips interactive prompts)",
+        ),
+    ] = None,
 ) -> None:
     """Build a new workspace from a template and questionnaire."""
     dry_run = ctx.obj.get("dry_run", False)
@@ -288,19 +377,33 @@ def build(
         console.print(f"[dry-run] Would build workspace from template '{template}' into {target}")
         return
 
-    answers: dict[str, Any] = {}
-    for item in questionnaire:
-        key = item["key"]
-        question = item["question"]
-        default = item.get("default", "")
-        qtype = item.get("type", "text")
-        if qtype == "integer":
-            value = str(typer.prompt(question, default=int(default) if default else 0, type=int))
-        elif qtype == "confirm":
-            value = "yes" if typer.confirm(question, default=bool(default)) else "no"
-        else:
-            value = typer.prompt(question, default=default)
-        answers[key] = value
+    if answers_file:
+        import json
+
+        if not answers_file.is_file():
+            console.print(f"[red]Answers file not found:[/red] {answers_file}")
+            raise Exit(code=1)
+        try:
+            answers: dict[str, Any] = json.loads(answers_file.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            console.print(f"[red]Invalid JSON in answers file:[/red] {exc}")
+            raise Exit(code=1) from exc
+    else:
+        answers = {}
+        for item in questionnaire:
+            key = item["key"]
+            question = item["question"]
+            default = item.get("default", "")
+            qtype = item.get("type", "text")
+            if qtype == "integer":
+                value = str(
+                    typer.prompt(question, default=int(default) if default else 0, type=int)
+                )
+            elif qtype == "confirm":
+                value = "yes" if typer.confirm(question, default=bool(default)) else "no"
+            else:
+                value = typer.prompt(question, default=default)
+            answers[key] = value
 
     try:
         workspace_path = build_workspace(template, target, answers, validate=True)
