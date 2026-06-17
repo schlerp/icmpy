@@ -24,6 +24,21 @@
       "name": "weekly-report",
       "description": "Four-stage pipeline: data → highlights → narrative → final review",
       "path": "weekly_report"
+    },
+    {
+      "name": "feature-spec",
+      "description": "Five-stage pipeline: problem → requirements → UX flow → API spec → PRD",
+      "path": "feature_spec"
+    },
+    {
+      "name": "bug-runbook",
+      "description": "Five-stage pipeline: reproduction → root cause → fix → validation → post mortem",
+      "path": "bug_runbook"
+    },
+    {
+      "name": "api-design",
+      "description": "Five-stage pipeline: use cases → endpoints → schemas → examples → docs",
+      "path": "api_design"
     }
   ]
 }

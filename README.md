@@ -83,6 +83,9 @@ Available templates:
 | `long-form-essay` | Idea → Research → Outline → Draft → Edit |
 | `course-module` | Learning design → Outline → Content → Slides → Assessment |
 | `weekly-report` | Data → Highlights → Narrative → Review |
+| `feature-spec` | Problem → Requirements → UX Flow → API Spec → PRD |
+| `bug-runbook` | Reproduction → Root Cause → Fix → Validation → Post Mortem |
+| `api-design` | Use Cases → Endpoints → Schemas → Examples → Documentation |
 
 Templates are Jinja2-rendered and come with their own builder questionnaire.
 

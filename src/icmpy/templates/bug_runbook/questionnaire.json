@@ -1,0 +1,7 @@
+[
+  {"key": "workspace_name", "question": "What should the workspace be named?", "type": "text", "default": "bug-runbook"},
+  {"key": "issue_summary", "question": "Short summary of the issue?", "type": "text"},
+  {"key": "affected_system", "question": "Which system or component is affected?", "type": "text"},
+  {"key": "severity", "question": "Severity?", "type": "text", "default": "high"},
+  {"key": "reporter", "question": "Who reported it?", "type": "text", "default": "on-call"}
+]
