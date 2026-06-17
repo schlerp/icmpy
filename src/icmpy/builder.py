@@ -48,8 +48,11 @@ def load_questionnaire(template_dir: Path) -> list[dict[str, Any]]:
     questionnaire_path = template_dir / "questionnaire.json"
     if not questionnaire_path.is_file():
         return []
-    with questionnaire_path.open(encoding="utf-8") as f:
-        items = json.load(f)
+    try:
+        with questionnaire_path.open(encoding="utf-8") as f:
+            items = json.load(f)
+    except json.JSONDecodeError as exc:
+        raise TemplateError(f"Invalid questionnaire JSON: {exc}") from exc
     if not isinstance(items, list):
         raise TemplateError("questionnaire.json must contain a JSON array")
     return items
@@ -136,3 +139,95 @@ def build_workspace(
             raise TemplateError(f"Built workspace failed validation:\n{errors}")
 
     return workspace_path
+
+
+def _is_stage_folder(name: str) -> bool:
+    """True if *name* looks like a numbered stage directory."""
+    import re
+
+    return bool(re.match(r"^\d{2,}_[^_].*$", name))
+
+
+def _stage_title(stage_dir: Path) -> str:
+    """Return the title line from a stage CONTEXT.md, or the directory name."""
+    contract = stage_dir / "CONTEXT.md"
+    if contract.is_file():
+        first = contract.read_text(encoding="utf-8").splitlines()[0].strip()
+        if first.startswith("# "):
+            return first.lstrip("# ").strip()
+    return stage_dir.name
+
+
+def validate_template(template_name: str, answers: dict[str, Any] | None = None) -> list[str]:
+    """Return a list of validation errors for *template_name*.
+
+    An empty list means the template is renderable and well-formed.
+    """
+    errors: list[str] = []
+    try:
+        manifest = load_template_manifest_entry(template_name)
+    except TemplateError as exc:
+        return [str(exc)]
+
+    template_dir = _templates_root() / manifest["path"]
+    if not template_dir.is_dir():
+        return [f"Template directory not found: {template_dir}"]
+
+    try:
+        load_questionnaire(template_dir)
+    except TemplateError as exc:
+        return [str(exc)]
+
+    # Render every template file with dummy answers to surface Jinja2 errors.
+    last_rel = "<unknown>"
+    try:
+        env = Environment(loader=FileSystemLoader(str(template_dir)))
+        for source in sorted(template_dir.rglob("*")):
+            if not source.is_file() or source.name == "questionnaire.json":
+                continue
+            rel = source.relative_to(template_dir).as_posix()
+            last_rel = rel
+            template = env.get_template(rel)
+            template.render(**(answers or {}))
+    except Exception as exc:  # pragma: no cover - generic template errors
+        return [f"Template render error in '{last_rel}': {exc}"]
+
+    # Check that every top-level stage directory has a CONTEXT.md contract.
+    stages_dir = template_dir / "stages"
+    if stages_dir.is_dir():
+        for stage_dir in sorted(stages_dir.iterdir()):
+            if not stage_dir.is_dir() or not _is_stage_folder(stage_dir.name):
+                continue
+            contract = stage_dir / "CONTEXT.md"
+            if not contract.is_file():
+                errors.append(f"Stage {stage_dir.name} is missing CONTEXT.md")
+
+    return errors
+
+
+def template_info(template_name: str) -> dict[str, Any]:
+    """Return structural information about a template for display."""
+    manifest = load_template_manifest_entry(template_name)
+    template_dir = _templates_root() / manifest["path"]
+    questionnaire = load_questionnaire(template_dir)
+
+    stages_dir = template_dir / "stages"
+    stages: list[dict[str, str]] = []
+    if stages_dir.is_dir():
+        for stage_dir in sorted(stages_dir.iterdir()):
+            if stage_dir.is_dir() and _is_stage_folder(stage_dir.name):
+                stages.append({"directory": stage_dir.name, "name": _stage_title(stage_dir)})
+
+    return {
+        "name": template_name,
+        "description": manifest["description"],
+        "questions": [
+            {
+                "key": item.get("key", "unknown"),
+                "type": item.get("type", "text"),
+                "default": item.get("default", ""),
+            }
+            for item in questionnaire
+        ],
+        "stages": stages,
+    }

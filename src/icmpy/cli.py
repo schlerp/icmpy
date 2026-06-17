@@ -14,7 +14,9 @@ from icmpy.builder import (
     list_templates,
     load_questionnaire,
     load_template_manifest_entry,
+    template_info,
     templates_root,
+    validate_template,
 )
 from icmpy.scaffold import create_workspace
 from icmpy.validator import validate_workspace
@@ -350,6 +352,40 @@ def build_list() -> None:
     console.print(table)
 
 
+@build_app.command("info")
+def build_info(
+    template: Annotated[str, Argument(help="Built-in template name")],
+) -> None:
+    """Show details about a template: description, questions, and stages."""
+    from rich.table import Table
+
+    try:
+        info = template_info(template)
+    except TemplateError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise Exit(code=1) from exc
+
+    console.print(f"[cyan]{info['name']}[/cyan]: {info['description']}")
+
+    if info["questions"]:
+        table = Table(title="Questions")
+        table.add_column("Key", style="cyan")
+        table.add_column("Type")
+        table.add_column("Default")
+        for q in info["questions"]:
+            table.add_row(q["key"], q["type"], str(q["default"]))
+        console.print(table)
+
+    if info["stages"]:
+        table = Table(title="Stages")
+        table.add_column("#", justify="right", style="cyan")
+        table.add_column("Name")
+        for stage in info["stages"]:
+            number = stage["directory"].split("_", 1)[0]
+            table.add_row(number, stage["name"])
+        console.print(table)
+
+
 @build_app.command("create")
 def build_create(
     ctx: Context,
@@ -387,6 +423,13 @@ def build_create(
     except TemplateError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise Exit(code=1) from exc
+
+    validation_errors = validate_template(template, answers=None)
+    if validation_errors:
+        console.print(f"[red]Template '{template}' failed validation:[/red]")
+        for error in validation_errors:
+            console.print(f"  • {error}")
+        raise Exit(code=1)
 
     if dry_run:
         console.print(f"[dry-run] Would build workspace from template '{template}' into {target}")

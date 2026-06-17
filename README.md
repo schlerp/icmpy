@@ -79,6 +79,14 @@ List available templates:
 icmp build list
 ```
 
+Preview a template before building:
+
+```bash
+icmp build info feature-spec
+```
+
+This shows the template description, questionnaire questions, and stage pipeline.
+
 Available templates:
 
 | Template | Description |
@@ -130,6 +138,7 @@ my-workspace/
 | `icmp build create --template <name>` | Build a workspace from a built-in template |
 | `icmp build create --answers-file <path>` | Build non-interactively from JSON answers |
 | `icmp build list` | List available templates |
+| `icmp build info <template>` | Preview a template's questions and stages |
 | `icmp stage list` | List stages with status |
 | `icmp stage run <stage>` | Assemble and print a stage's context bundle |
 | `icmp stage run next` | Run the first pending stage |
