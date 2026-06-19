@@ -134,3 +134,71 @@ icmp validate --workspace /tmp/test-build/my-workspace
 ## External templates (future)
 
 A future release will support loading templates from arbitrary folders and Git URLs via `--template-dir`.
+
+## User-defined custom templates
+
+`icmpy` also supports custom templates stored outside the package. Use these to
+maintain team-specific or private workflows without modifying the built-in set.
+
+### Custom template directory
+
+Run `icmp template path` to see where custom templates live on your system. The
+location follows platform conventions:
+
+- `$XDG_CONFIG_HOME/icmpy/templates` if `XDG_CONFIG_HOME` is set.
+- `~/.config/icmpy/templates` on macOS if `~/.config` exists.
+- `~/Library/Application Support/icmpy/templates` on macOS otherwise.
+- `~/.config/icmpy/templates` on Linux/BSD.
+- `%LOCALAPPDATA%\icmpy\templates` on Windows.
+
+Create the directory with `icmp template path --create`.
+
+### Creating a custom template
+
+The easiest way to start is to copy a built-in template:
+
+```bash
+icmp template cp --from empty --to my-template
+```
+
+This copies the entire template folder and adds a `CONTEXT.md` frontmatter file.
+Edit the template files under the custom root as needed.
+
+A custom template must follow the same layout as built-ins and include a
+`CONTEXT.md` at its root with YAML frontmatter containing at least a `purpose`:
+
+```markdown
+---
+purpose: My custom workflow template
+---
+
+# My template
+
+Optional description of the template.
+```
+
+### Discovering and validating templates
+
+List all available templates, including custom ones, and see any name collisions:
+
+```bash
+icmp template list
+```
+
+Validate custom templates before use:
+
+```bash
+icmp template validate
+icmp template validate my-template
+```
+
+### Building from a custom template
+
+When a custom template shares a name with a built-in, pass `--origin custom`:
+
+```bash
+icmp build create --template my-template --origin custom
+```
+
+Otherwise `icmp build create --template <name>` chooses automatically when the
+name is unambiguous.
