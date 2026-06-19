@@ -12,7 +12,7 @@ runner = CliRunner()
 def test_build_list_shows_templates() -> None:
     result = runner.invoke(app, ["build", "list"])
     assert result.exit_code == 0
-    assert "Available built-in templates" in result.output
+    assert "Available templates" in result.output
     assert "empty" in result.output
     assert "script-to-animation" in result.output
 
