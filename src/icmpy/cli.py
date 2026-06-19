@@ -11,14 +11,14 @@ from icmpy import __version__
 from icmpy.builder import (
     TemplateError,
     build_workspace,
-    list_templates,
-    load_questionnaire,
-    load_template_manifest_entry,
+    copy_builtin_to_custom,
+    discover_templates,
+    resolve_template,
     template_info,
-    templates_root,
     validate_template,
 )
 from icmpy.scaffold import create_workspace
+from icmpy.template_catalog import get_custom_template_root
 from icmpy.validator import validate_workspace
 
 console = Console()
@@ -341,31 +341,45 @@ app.add_typer(build_app)
 
 @build_app.command("list")
 def build_list() -> None:
-    """List available built-in templates."""
+    """List available built-in and custom templates."""
     from rich.table import Table
 
-    table = Table(title="Available built-in templates")
+    templates = discover_templates()
+    if not templates:
+        console.print("No templates found.")
+        return
+
+    table = Table(title="Available templates")
     table.add_column("Template", style="cyan")
+    table.add_column("Origin")
     table.add_column("Pipeline")
-    for entry in list_templates():
-        table.add_row(entry["name"], entry["description"])
+    for entry in templates:
+        table.add_row(
+            entry["name"],
+            entry["origin"],
+            entry["description"],
+        )
     console.print(table)
 
 
 @build_app.command("info")
 def build_info(
-    template: Annotated[str, Argument(help="Built-in template name")],
+    template: Annotated[str, Argument(help="Template name")],
+    origin: Annotated[
+        str | None,
+        Option("--origin", help="Origin filter: built-in or custom"),
+    ] = None,
 ) -> None:
     """Show details about a template: description, questions, and stages."""
     from rich.table import Table
 
     try:
-        info = template_info(template)
+        info = template_info(template, origin=origin)
     except TemplateError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise Exit(code=1) from exc
 
-    console.print(f"[cyan]{info['name']}[/cyan]: {info['description']}")
+    console.print(f"[cyan]{info['name']}[/cyan] ({info['origin']}): {info['description']}")
 
     if info["questions"]:
         table = Table(title="Questions")
@@ -391,7 +405,11 @@ def build_create(
     ctx: Context,
     template: Annotated[
         str | None,
-        Option("--template", "-t", help="Built-in template name"),
+        Option("--template", "-t", help="Template name"),
+    ] = None,
+    origin: Annotated[
+        str | None,
+        Option("--origin", help="Origin filter: built-in or custom"),
     ] = None,
     target: Annotated[
         Path,
@@ -417,14 +435,14 @@ def build_create(
         raise Exit(code=1)
 
     try:
-        manifest = load_template_manifest_entry(template)
-        template_dir = templates_root() / manifest["path"]
+        template_entry = resolve_template(template, origin=origin)
+        template_dir = template_entry["path"]
         questionnaire = load_questionnaire(template_dir)
     except TemplateError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise Exit(code=1) from exc
 
-    validation_errors = validate_template(template, answers=None)
+    validation_errors = validate_template(template, answers=None, origin=origin)
     if validation_errors:
         console.print(f"[red]Template '{template}' failed validation:[/red]")
         for error in validation_errors:
@@ -464,7 +482,7 @@ def build_create(
             answers[key] = value
 
     try:
-        workspace_path = build_workspace(template, target, answers, validate=True)
+        workspace_path = build_workspace(template, target, answers, validate=True, origin=origin)
     except (FileExistsError, TemplateError) as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise Exit(code=1) from exc
@@ -472,3 +490,147 @@ def build_create(
     console.print(f"[green]Built workspace:[/green] {workspace_path}")
     if verbose:
         console.print(f"Using template '{template}' with {len(answers)} answers")
+
+
+def load_questionnaire(template_dir: Path) -> list[dict[str, Any]]:
+    """Load the questionnaire for a template directory."""
+    from icmpy.builder import load_questionnaire as _load_questionnaire
+
+    return _load_questionnaire(template_dir)
+
+
+template_app = Typer(
+    name="template",
+    help="Manage workspace templates",
+    no_args_is_help=True,
+)
+app.add_typer(template_app)
+
+
+@template_app.command("path")
+def template_path(
+    create: Annotated[
+        bool,
+        Option("--create", help="Create the custom template directory if it does not exist"),
+    ] = False,
+) -> None:
+    """Print the custom template directory path."""
+    root = get_custom_template_root()
+    if create and not root.is_dir():
+        root.mkdir(parents=True, exist_ok=True)
+    console.print(str(root), soft_wrap=True)
+
+
+@template_app.command("list")
+def template_list() -> None:
+    """List built-in and custom templates, noting name collisions."""
+    from rich.table import Table
+
+    from icmpy.template_catalog import TemplateCatalog, TemplateOrigin
+
+    catalog = TemplateCatalog()
+    templates = catalog.templates
+
+    if not templates:
+        console.print("No templates found.")
+        return
+
+    table = Table(title="Available templates")
+    table.add_column("Template", style="cyan")
+    table.add_column("Origin")
+    table.add_column("Description")
+    table.add_column("Note")
+
+    for template in templates:
+        note = ""
+        if catalog.is_shadowed(template):
+            if template.origin == TemplateOrigin.CUSTOM:
+                note = "shadows built-in"
+            else:
+                note = "shadowed"
+        table.add_row(
+            template.name,
+            template.origin.value,
+            template.description,
+            note,
+        )
+
+    console.print(table)
+
+    if not catalog.custom_root.is_dir():
+        console.print(
+            "No custom templates directory found. Run `icmp template path` "
+            "to see where to create one."
+        )
+
+    for warning in catalog.warnings:
+        console.print(f"[yellow]Warning:[/yellow] {warning}", soft_wrap=True)
+
+
+@template_app.command("cp")
+def template_cp(
+    from_name: Annotated[str, Option("--from", help="Built-in template to copy")],
+    to_name: Annotated[
+        str | None,
+        Option("--to", help="Name for the custom copy (defaults to --from)"),
+    ] = None,
+    custom_root: Annotated[
+        Path | None,
+        Option("--custom-root", help="Override the custom template directory"),
+    ] = None,
+) -> None:
+    """Copy a built-in template into your custom templates directory."""
+    try:
+        destination = copy_builtin_to_custom(
+            from_name, target_name=to_name, custom_root=custom_root
+        )
+    except TemplateError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise Exit(code=1) from exc
+    except FileExistsError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise Exit(code=2) from exc
+
+    console.print(f"[green]Copied template to:[/green] {destination}")
+
+
+@template_app.command("validate")
+def template_validate(
+    name: Annotated[
+        str | None,
+        Argument(help="Template name to validate (default: all templates)"),
+    ] = None,
+    origin: Annotated[
+        str | None,
+        Option("--origin", help="Origin filter: built-in or custom"),
+    ] = None,
+) -> None:
+    """Validate one or all templates."""
+    if name is not None:
+        errors = validate_template(name, origin=origin)
+        if errors:
+            console.print(f"[red]Template '{name}' is invalid:[/red]")
+            for error in errors:
+                console.print(f"  ✗ {error}", soft_wrap=True)
+            raise Exit(code=1)
+        console.print(f"[green]Template '{name}' is valid[/green]")
+        return
+
+    templates = discover_templates()
+    failed = False
+    console.print("Template validation")
+    for entry in templates:
+        errors = validate_template(entry["name"], origin=entry["origin"])
+        if errors:
+            failed = True
+            console.print(
+                f"  [red]✗[/red] {entry['name']} ({entry['origin']}): invalid",
+                soft_wrap=True,
+            )
+            for error in errors:
+                console.print(f"      {error}", soft_wrap=True)
+        else:
+            console.print(f"  [green]✓[/green] {entry['name']} ({entry['origin']}): valid")
+
+    if failed:
+        raise Exit(code=1)
