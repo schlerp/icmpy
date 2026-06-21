@@ -166,13 +166,98 @@ If the estimated token count exceeds 8,000, `icmp` prints a warning because mode
 
 ## Writing your own template
 
-Templates live under `src/icmpy/templates/` and contain:
+You can create templates locally without touching the package source. The fastest way is to copy a built-in template and edit it:
 
-- `questionnaire.json` — questions asked during `icmp build`
-- `_config/voice.md` — template-specific reference material
-- `stages/NN_name/CONTEXT.md` — stage contracts
+```bash
+# 1. Find where custom templates live on your system
+icmp template path
 
-Use Jinja2 syntax (`{{ variable }}`) to substitute questionnaire answers into any file. Add the template to `builtins_manifest.json` to make it discoverable.
+# 2. Copy a built-in template as a starting point
+icmp template cp --from empty --to blog-post
+
+# 3. Edit the copied files under the custom template directory
+```
+
+Add a root `CONTEXT.md` to the template with YAML frontmatter so `icmpy` knows what it is:
+
+```markdown
+---
+purpose: A blog-post workflow with research, outline, draft and edit stages
+---
+```
+
+### Questionnaire example
+
+The `questionnaire.json` drives the interactive prompts when building:
+
+```json
+[
+  {
+    "key": "workspace_name",
+    "question": "What should the workspace be named?",
+    "type": "text",
+    "default": "my-icm-workspace"
+  },
+  {
+    "key": "author_name",
+    "question": "Who is the author?",
+    "type": "text",
+    "default": "Anonymous"
+  },
+  {
+    "key": "target_word_count",
+    "question": "Target word count?",
+    "type": "integer",
+    "default": 1200
+  },
+  {
+    "key": "needs_examples",
+    "question": "Include worked examples?",
+    "type": "confirm",
+    "default": true
+  }
+]
+```
+
+### Jinja2 rendering
+
+Any template file can use questionnaire answers:
+
+```markdown
+# Blog Post - Research Stage
+
+## Inputs
+
+{% if needs_examples %}
+- Example posts from _config/examples/
+{% endif %}
+
+## Process
+
+Research topic for {{ author_name }}.
+Target length: {{ target_word_count }} words.
+```
+
+### Building from a custom template
+
+When a custom template shares a name with a built-in, pass `--origin custom`:
+
+```bash
+icmp build create --template blog-post --origin custom
+```
+
+Skip interactive prompts with a JSON answers file:
+
+```bash
+icmp build create --template blog-post --answers-file answers.json
+```
+
+List and validate your custom templates:
+
+```bash
+icmp template list
+icmp template validate blog-post
+```
 
 See `docs/custom-templates.md` for a full guide.
 

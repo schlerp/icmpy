@@ -1,12 +1,20 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from typing import Any
 
 from jinja2 import BaseLoader, Environment, FileSystemLoader
 
 from icmpy.scaffold import CLAUDE_MD_TEMPLATE, CONTEXT_MD_TEMPLATE, VOICE_MD_TEMPLATE
+from icmpy.template_catalog import (
+    AmbiguousTemplateName,
+    TemplateCatalog,
+    TemplateOrigin,
+    get_custom_template_root,
+    validate_custom_template,
+)
 from icmpy.validator import validate_workspace
 
 
@@ -26,8 +34,29 @@ def _templates_root() -> Path:
     return templates_root()
 
 
+def _origin_from_option(origin: TemplateOrigin | str | None) -> TemplateOrigin | None:
+    """Normalize a CLI origin option to a TemplateOrigin enum value."""
+    if origin is None:
+        return None
+    if isinstance(origin, TemplateOrigin):
+        return origin
+    value = str(origin).lower().replace("_", "-")
+    for member in TemplateOrigin:
+        if value == member.value.lower():
+            return member
+    raise ValueError(f"Invalid origin: {origin}")
+
+
+def discover_templates(custom_root: Path | None = None) -> list[dict[str, Any]]:
+    """Return all built-in and custom templates as a unified catalog."""
+    return TemplateCatalog(custom_root=custom_root, builtin_root=_templates_root()).list_templates()
+
+
 def list_templates() -> list[dict[str, Any]]:
-    """Return the list of built-in templates from the manifest."""
+    """Return the list of built-in templates from the manifest.
+
+    For the unified catalog (built-ins + custom), use ``discover_templates``.
+    """
     manifest_path = _templates_root() / "builtins_manifest.json"
     with manifest_path.open(encoding="utf-8") as f:
         data = json.load(f)
@@ -35,12 +64,45 @@ def list_templates() -> list[dict[str, Any]]:
 
 
 def load_template_manifest_entry(name: str) -> dict[str, Any]:
-    """Return a single manifest entry by template name, or raise TemplateError."""
+    """Return a single built-in manifest entry by template name.
+
+    Raises TemplateError if the template is not a built-in.
+    """
     for template in list_templates():
         if template["name"] == name:
             return template
     available = ", ".join(t["name"] for t in list_templates())
-    raise TemplateError(f"Unknown template '{name}'. Available: {available}")
+    raise TemplateError(f"Unknown built-in template '{name}'. Available: {available}")
+
+
+def resolve_template(
+    name: str,
+    origin: TemplateOrigin | str | None = None,
+    custom_root: Path | None = None,
+) -> dict[str, Any]:
+    """Resolve a template name to its path and metadata.
+
+    Returns a dict with ``name``, ``description``, ``origin`` and ``path``.
+    Raises TemplateError on ambiguity or if the template is not found.
+    """
+    catalog = TemplateCatalog(custom_root=custom_root, builtin_root=_templates_root())
+    try:
+        resolved_origin = _origin_from_option(origin)
+    except ValueError as exc:
+        raise TemplateError(str(exc)) from exc
+    try:
+        template = catalog.get(name, origin=resolved_origin)
+    except AmbiguousTemplateName as exc:
+        raise TemplateError(str(exc)) from exc
+    except KeyError as exc:
+        raise TemplateError(f"Unknown template '{name}'") from exc
+
+    return {
+        "name": template.name,
+        "description": template.description,
+        "origin": template.origin.value,
+        "path": template.path,
+    }
 
 
 def load_questionnaire(template_dir: Path) -> list[dict[str, Any]]:
@@ -71,24 +133,28 @@ def build_workspace(
     answers: dict[str, Any] | None = None,
     *,
     validate: bool = True,
+    origin: TemplateOrigin | str | None = None,
+    custom_root: Path | None = None,
 ) -> Path:
-    """Build a new ICM workspace from a built-in template.
+    """Build a new ICM workspace from a built-in or custom template.
 
     Args:
-        template_name: Name of the built-in template (from the manifest).
+        template_name: Name of the template.
         target_dir: Directory in which to create the workspace. The final
-            workspace folder name is taken from `answers.get("workspace_name")`
+            workspace folder name is taken from ``answers.get("workspace_name")``
             or defaults to the template name.
         answers: Questionnaire answers used to render template files.
         validate: Whether to run validate_workspace on the created workspace.
-            Templates intentionally missing stages should pass False.
+        origin: Optional origin filter (``built-in`` or ``custom``) to resolve
+            ambiguous template names.
+        custom_root: Optional override for the custom template directory.
 
     Returns:
         The path to the created workspace directory.
     """
     answers = dict(answers or {})
-    manifest = load_template_manifest_entry(template_name)
-    template_dir = _templates_root() / manifest["path"]
+    template = resolve_template(template_name, origin=origin, custom_root=custom_root)
+    template_dir = template["path"]
 
     if not template_dir.is_dir():
         raise TemplateError(f"Template directory not found: {template_dir}")
@@ -125,11 +191,15 @@ def build_workspace(
         rel_path = source.relative_to(template_dir)
         if rel_path.name == "questionnaire.json":
             continue
+        if rel_path == Path("CONTEXT.md"):
+            # CONTEXT.md at the template root is template metadata, not the
+            # workspace routing file, so leave the scaffold version in place.
+            continue
 
         destination = workspace_path / rel_path
         destination.parent.mkdir(parents=True, exist_ok=True)
-        template = env.get_template(str(rel_path.as_posix()))
-        rendered = template.render(**answers)
+        jinja_template = env.get_template(str(rel_path.as_posix()))
+        rendered = jinja_template.render(**answers)
         destination.write_text(rendered, encoding="utf-8")
 
     if validate:
@@ -158,20 +228,31 @@ def _stage_title(stage_dir: Path) -> str:
     return stage_dir.name
 
 
-def validate_template(template_name: str, answers: dict[str, Any] | None = None) -> list[str]:
+def validate_template(
+    template_name: str,
+    answers: dict[str, Any] | None = None,
+    origin: TemplateOrigin | str | None = None,
+    custom_root: Path | None = None,
+) -> list[str]:
     """Return a list of validation errors for *template_name*.
 
     An empty list means the template is renderable and well-formed.
     """
     errors: list[str] = []
     try:
-        manifest = load_template_manifest_entry(template_name)
+        template = resolve_template(template_name, origin=origin, custom_root=custom_root)
     except TemplateError as exc:
         return [str(exc)]
 
-    template_dir = _templates_root() / manifest["path"]
+    template_dir = template["path"]
     if not template_dir.is_dir():
         return [f"Template directory not found: {template_dir}"]
+
+    template_origin = _origin_from_option(template["origin"])
+    if template_origin == TemplateOrigin.CUSTOM:
+        custom_errors = validate_custom_template(template_dir)
+        if custom_errors:
+            errors.extend(custom_errors)
 
     try:
         load_questionnaire(template_dir)
@@ -185,10 +266,13 @@ def validate_template(template_name: str, answers: dict[str, Any] | None = None)
         for source in sorted(template_dir.rglob("*")):
             if not source.is_file() or source.name == "questionnaire.json":
                 continue
-            rel = source.relative_to(template_dir).as_posix()
-            last_rel = rel
-            template = env.get_template(rel)
-            template.render(**(answers or {}))
+            rel = source.relative_to(template_dir)
+            if rel == Path("CONTEXT.md"):
+                # Root CONTEXT.md is template metadata, not a renderable asset.
+                continue
+            last_rel = rel.as_posix()
+            jinja_template = env.get_template(last_rel)
+            jinja_template.render(**(answers or {}))
     except Exception as exc:  # pragma: no cover - generic template errors
         return [f"Template render error in '{last_rel}': {exc}"]
 
@@ -205,10 +289,14 @@ def validate_template(template_name: str, answers: dict[str, Any] | None = None)
     return errors
 
 
-def template_info(template_name: str) -> dict[str, Any]:
+def template_info(
+    template_name: str,
+    origin: TemplateOrigin | str | None = None,
+    custom_root: Path | None = None,
+) -> dict[str, Any]:
     """Return structural information about a template for display."""
-    manifest = load_template_manifest_entry(template_name)
-    template_dir = _templates_root() / manifest["path"]
+    template = resolve_template(template_name, origin=origin, custom_root=custom_root)
+    template_dir = template["path"]
     questionnaire = load_questionnaire(template_dir)
 
     stages_dir = template_dir / "stages"
@@ -219,8 +307,9 @@ def template_info(template_name: str) -> dict[str, Any]:
                 stages.append({"directory": stage_dir.name, "name": _stage_title(stage_dir)})
 
     return {
-        "name": template_name,
-        "description": manifest["description"],
+        "name": template["name"],
+        "description": template["description"],
+        "origin": template["origin"],
         "questions": [
             {
                 "key": item.get("key", "unknown"),
@@ -231,3 +320,46 @@ def template_info(template_name: str) -> dict[str, Any]:
         ],
         "stages": stages,
     }
+
+
+def copy_builtin_to_custom(
+    source_name: str,
+    target_name: str | None = None,
+    custom_root: Path | None = None,
+) -> Path:
+    """Copy a built-in template to the custom template directory.
+
+    Args:
+        source_name: Name of the built-in template to copy.
+        target_name: Optional name for the custom copy. Defaults to *source_name*.
+        custom_root: Optional override for the custom template directory.
+
+    Returns:
+        Path to the new custom template directory.
+
+    Raises:
+        TemplateError: when the source built-in template is unknown.
+        FileExistsError: when the destination already exists.
+    """
+    destination_root = custom_root or get_custom_template_root()
+    custom_entry = resolve_template(source_name, origin=TemplateOrigin.BUILTIN)
+    source_dir = custom_entry["path"]
+    target_name = target_name or source_name
+    destination = destination_root / target_name
+
+    if destination.exists():
+        raise FileExistsError(f"Custom template already exists: {destination}")
+
+    destination_root.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source_dir, destination)
+
+    context_md = destination / "CONTEXT.md"
+    if not context_md.is_file():
+        description = custom_entry.get("description", f"Custom {source_name} template")
+        context_md.write_text(
+            f"---\npurpose: {description}\n---\n\n# {target_name}\n\n"
+            f"Custom copy of the {source_name} template.\n",
+            encoding="utf-8",
+        )
+
+    return destination
