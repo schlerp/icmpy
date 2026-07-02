@@ -1,6 +1,6 @@
 """icmpy: scaffolding and orchestration for the Interpretable Context Methodology."""
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 
 def hello() -> str:

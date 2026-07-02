@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.0.4] - 2026-07-02
+
 ### Added
 
 - LLM harness dispatch: `icmp stage run <stage> --harness <name>` sends the assembled context bundle directly to Claude Code, OpenAI Codex, OpenCode, or `pi`, saving the harness response to the stage's `output/` directory.
