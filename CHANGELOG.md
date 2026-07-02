@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+## [0.0.3] - 2026-07-02
+
+### Added
+
+- New `icmp reset` command to clear run flags for a single stage or the whole workspace, with optional `--remove-outputs` to delete stage `output/` directories.
+
+## [0.0.2] - 2026-06-21
+
+### Added
+
+- Custom template support: copy built-in templates, list templates, and validate templates with the `icmp template` family of commands.
+- Expanded custom template documentation and walkthrough examples.
+
+## [0.0.1] - 2026-06-17
+
 ### Added
 
 - Initial CLI: `init`, `validate`, `build`, `stage list`, `stage run`
@@ -16,8 +31,4 @@ All notable changes to this project will be documented in this file.
 - `icmp completion` for bash, zsh, and fish
 - Token-count estimation with 8k-context warning
 - Markdown-formatted context bundles
-- Documentation: README, custom templates guide, philosophy, CLI tips, and contributing guide
-
-### Fixed
-
-- N/A
+- Documentation: README, docs, custom templates guide, CONTRIBUTING, and CLI tips
