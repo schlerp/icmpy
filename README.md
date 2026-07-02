@@ -141,7 +141,9 @@ my-workspace/
 | `icmp build info <template>` | Preview a template's questions and stages |
 | `icmp stage list` | List stages with status |
 | `icmp stage run <stage>` | Assemble and print a stage's context bundle |
+| `icmp stage run <stage> --harness <name>` | Dispatch a stage's bundle to an LLM harness |
 | `icmp stage run next` | Run the first pending stage |
+| `icmp harness list` | List available LLM harness adapters |
 | `icmp reset` | Clear run flags for all stages (makes them pending) |
 | `icmp reset <stage>` | Clear the run flag for a single stage |
 | `icmp reset --remove-outputs` | Also delete stage `output/` directories |
@@ -166,6 +168,34 @@ A context bundle is the plain-text prompt that `icmp stage run` assembles for th
 The bundle is rendered as markdown with `# Layer N` headings and `## file:` markers, so it is easy to read and paste into any AI tool.
 
 If the estimated token count exceeds 8,000, `icmp` prints a warning because model performance tends to degrade with very long contexts.
+
+## Running stages through LLM harnesses
+
+Instead of copying and pasting the bundle, you can dispatch it straight to a supported LLM harness:
+
+```bash
+# Run the next pending stage through Claude Code
+icmp stage run next --harness claude
+
+# Use OpenAI Codex, OpenCode, or pi
+icmp stage run 01 --harness codex
+icmp stage run 02 --harness opencode
+icmp stage run 03 --harness pi
+```
+
+The harness receives the full context bundle (Layers 0-4) and its response is saved to the stage's `output/` directory as `<harness>.md`. The stage is marked complete so `next` can continue.
+
+List available harness adapters:
+
+```bash
+icmp harness list
+```
+
+Dry-run a harness dispatch to see the command that would be executed:
+
+```bash
+icmp --dry-run stage run next --harness claude
+```
 
 ## Writing your own template
 

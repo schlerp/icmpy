@@ -17,6 +17,7 @@ from icmpy.builder import (
     template_info,
     validate_template,
 )
+from icmpy.harness import HarnessError, list_harnesses, run_harness
 from icmpy.scaffold import create_workspace
 from icmpy.template_catalog import get_custom_template_root
 from icmpy.validator import validate_workspace
@@ -174,9 +175,14 @@ def stage_run(
         Path | None,
         Option("--output", "-o", help="File path to write the context bundle to"),
     ] = None,
+    harness: Annotated[
+        str | None,
+        Option("--harness", help="Dispatch the bundle to an LLM harness instead of printing it"),
+    ] = None,
 ) -> None:
     """Assemble and run a single stage's context bundle."""
     dry_run = ctx.obj.get("dry_run", False)
+    verbose: int = ctx.obj.get("verbose", 0)
 
     result = validate_workspace(workspace)
     if not result.ok:
@@ -197,7 +203,7 @@ def stage_run(
         resolved_stage = pending.directory
         console.print(f"[cyan]Next pending stage:[/cyan] {pending.number:02d} {pending.name}")
 
-    if dry_run:
+    if dry_run and not harness:
         console.print(f"[dry-run] Would assemble context bundle for stage '{resolved_stage}'")
         return
 
@@ -234,7 +240,6 @@ def stage_run(
     from icmpy.tokens import estimate_tokens
 
     token_count = estimate_tokens(rendered)
-    verbose: int = ctx.obj.get("verbose", 0)
     if token_count > 8000:
         console.print(
             f"[yellow]Warning:[/yellow] estimated context is {token_count} tokens "
@@ -246,18 +251,74 @@ def stage_run(
     if output:
         output.write_text(rendered, encoding="utf-8")
         console.print(f"[green]Context bundle written to:[/green] {output}")
-    else:
+
+    stage_dir = bundle["stage_dir"]
+    output_dir = stage_dir / "output"
+    output_dir.mkdir(exist_ok=True)
+
+    if harness:
+        harness = harness.lower()
+        try:
+            response, command = run_harness(
+                harness,
+                rendered,
+                workspace_path=workspace,
+                stage_dir=stage_dir,
+                dry_run=dry_run,
+            )
+        except HarnessError as exc:
+            console.print(f"[red]Harness error:[/red] {exc}")
+            raise Exit(code=1) from exc
+
+        if dry_run:
+            console.print(response)
+            return
+
+        harness_output = output_dir / f"{harness}.md"
+        harness_output.write_text(response, encoding="utf-8")
+        run_flag = output_dir / RUN_FLAG
+        run_flag.write_text(
+            f"Stage '{resolved_stage}' dispatched to harness '{harness}'.\n"
+            f"Command: {' '.join(command)}\n"
+            f"Response saved to: {harness_output.name}\n",
+            encoding="utf-8",
+        )
+        console.print(f"[green]Dispatched to harness:[/green] {harness}")
+        console.print(f"[green]Response written to:[/green] {harness_output}")
+        if verbose:
+            console.print(f"Command: {' '.join(command)}")
+        return
+
+    if not output:
         console.print(rendered)
 
     # Ensure the stage has an output directory for later human editing
-    stage_dir = bundle["stage_dir"]
-    (stage_dir / "output").mkdir(exist_ok=True)
-    placeholder = stage_dir / "output" / RUN_FLAG
+    placeholder = output_dir / RUN_FLAG
     placeholder.write_text(
         f"Stage '{resolved_stage}' context bundle assembled at runtime.\n"
         "Replace this file with the actual stage outputs.\n",
         encoding="utf-8",
     )
+
+
+harness_app = Typer(
+    name="harness",
+    help="Dispatch stages to LLM harnesses",
+    no_args_is_help=True,
+)
+app.add_typer(harness_app)
+
+
+@harness_app.command("list")
+def harness_list() -> None:
+    """List available LLM harness adapters."""
+    names = list_harnesses()
+    if not names:
+        console.print("No harness adapters configured.")
+        return
+    console.print("Available harnesses:")
+    for name in names:
+        console.print(f"  • {name}")
 
 
 @app.command()
