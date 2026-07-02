@@ -65,3 +65,14 @@ Add `icmp validate` to a CI step to catch broken workspace structure before depl
     pip install icmpy
     icmp validate --workspace ./my-workspace
 ```
+
+## Dispatch to an LLM harness
+
+Run a stage directly through a supported harness instead of copy-pasting the bundle:
+
+```bash
+icmp stage run next --harness claude
+icmp stage run 03 --harness pi
+```
+
+Use `--dry-run` to preview the command, and `icmp harness list` to see supported adapters.
