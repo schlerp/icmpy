@@ -67,9 +67,9 @@ def test_stage_run_no_args_selects_next(tmp_path: Path) -> None:
 def test_stage_run_next_when_all_complete(tmp_path: Path) -> None:
     _make_workspace(tmp_path)
     (tmp_path / "stages" / "01_research" / "output").mkdir()
-    (tmp_path / "stages" / "01_research" / "output" / "summary.md").write_text("ok")
+    (tmp_path / "stages" / "01_research" / "output" / "_ran.txt").write_text("ok")
     (tmp_path / "stages" / "02_script" / "output").mkdir()
-    (tmp_path / "stages" / "02_script" / "output" / "script.md").write_text("ok")
+    (tmp_path / "stages" / "02_script" / "output" / "_ran.txt").write_text("ok")
     result = runner.invoke(app, ["stage", "run", "next", "--workspace", str(tmp_path)])
     assert result.exit_code == 0
     assert "All stages are complete" in result.output

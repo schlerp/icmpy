@@ -43,9 +43,9 @@ Write.
 - script.md
 """
     )
-    # Mark stage 01 completed by populating its output
+    # Mark stage 01 completed by writing the run flag
     (stages / "01_research" / "output").mkdir()
-    (stages / "01_research" / "output" / "summary.md").write_text("summary")
+    (stages / "01_research" / "output" / "_ran.txt").write_text("ran")
 
     pending = next_pending_stage(tmp_path)
     assert pending is not None

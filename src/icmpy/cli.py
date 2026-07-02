@@ -186,7 +186,7 @@ def stage_run(
         raise Exit(code=1)
 
     from icmpy.runner import assemble_context_bundle, render_context_bundle
-    from icmpy.stages import find_stage, next_pending_stage
+    from icmpy.stages import RUN_FLAG, find_stage, next_pending_stage
 
     resolved_stage = stage
     if resolved_stage is None or resolved_stage.lower() == "next":
@@ -252,7 +252,7 @@ def stage_run(
     # Ensure the stage has an output directory for later human editing
     stage_dir = bundle["stage_dir"]
     (stage_dir / "output").mkdir(exist_ok=True)
-    placeholder = stage_dir / "output" / "_ran.txt"
+    placeholder = stage_dir / "output" / RUN_FLAG
     placeholder.write_text(
         f"Stage '{resolved_stage}' context bundle assembled at runtime.\n"
         "Replace this file with the actual stage outputs.\n",
@@ -298,6 +298,76 @@ def status(
         table.add_row("Next stage", "[green]all done[/green]")
 
     console.print(table)
+
+
+@app.command()
+def reset(
+    ctx: Context,
+    stage: Annotated[
+        str | None,
+        Argument(help="Stage number or name to reset (omit to reset all stages)"),
+    ] = None,
+    workspace: Annotated[
+        Path,
+        Option("--workspace", "-w", help="Path to the workspace"),
+    ] = Path.cwd(),
+    remove_outputs: Annotated[
+        bool,
+        Option("--remove-outputs", help="Also remove all files in each stage's output directory"),
+    ] = False,
+) -> None:
+    """Remove the run flag for a stage (or all stages), optionally deleting outputs."""
+    dry_run = ctx.obj.get("dry_run", False)
+
+    result = validate_workspace(workspace)
+    if not result.ok:
+        console.print(f"[red]Invalid workspace:[/red] {workspace}")
+        for error in result.errors:
+            console.print(f"  • {error}")
+        raise Exit(code=1)
+
+    from icmpy.stages import clear_stage, discover_stages, find_stage
+
+    if stage is None:
+        target_stages = discover_stages(workspace)
+    else:
+        resolved = find_stage(workspace, stage)
+        if resolved is None:
+            console.print(f"[red]Stage not found:[/red] {stage}")
+            raise Exit(code=1)
+        target_stages = [resolved]
+
+    if not target_stages:
+        console.print("No stages to reset.")
+        return
+
+    prefix = "dry-run: " if dry_run else ""
+    total = 0
+    for stage_info in target_stages:
+        removed = clear_stage(stage_info, remove_outputs=remove_outputs, dry_run=dry_run)
+        if not removed:
+            console.print(
+                f"{prefix}No run flag to clear for stage {stage_info.number:02d} {stage_info.name}"
+            )
+            continue
+        total += len(removed)
+        if remove_outputs:
+            console.print(
+                f"{prefix}Removed outputs for stage {stage_info.number:02d} {stage_info.name}"
+            )
+        else:
+            console.print(
+                f"{prefix}Cleared run flag for stage {stage_info.number:02d} {stage_info.name}"
+            )
+        verbose: int = ctx.obj.get("verbose", 0)
+        if verbose or dry_run:
+            for path in removed:
+                console.print(f"  • {path.relative_to(workspace)}")
+
+    if stage is None:
+        noun = "output directory" if remove_outputs else "run flag"
+        label = "would affect" if dry_run else "removed"
+        console.print(f"{prefix}Reset {len(target_stages)} stage(s) ({label} {total} {noun}(s)).")
 
 
 @app.command()

@@ -59,7 +59,7 @@ def test_discover_stages_finds_ordered_stages(tmp_path: Path) -> None:
 def test_discover_stages_marks_completed_with_output(tmp_path: Path) -> None:
     _write_valid_workspace(tmp_path)
     (tmp_path / "stages" / "01_research" / "output").mkdir()
-    (tmp_path / "stages" / "01_research" / "output" / "summary.md").write_text("done")
+    (tmp_path / "stages" / "01_research" / "output" / "_ran.txt").write_text("done")
     stages = discover_stages(tmp_path)
     assert stages[0].status == "completed"
     assert stages[1].status == "pending"

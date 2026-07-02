@@ -60,9 +60,9 @@ def test_status_shows_next_stage(tmp_path: Path) -> None:
 def test_status_all_done(tmp_path: Path) -> None:
     _make_workspace(tmp_path)
     (tmp_path / "stages" / "01_research" / "output").mkdir()
-    (tmp_path / "stages" / "01_research" / "output" / "summary.md").write_text("ok")
+    (tmp_path / "stages" / "01_research" / "output" / "_ran.txt").write_text("ok")
     (tmp_path / "stages" / "02_script" / "output").mkdir()
-    (tmp_path / "stages" / "02_script" / "output" / "script.md").write_text("ok")
+    (tmp_path / "stages" / "02_script" / "output" / "_ran.txt").write_text("ok")
     result = runner.invoke(app, ["status", "--workspace", str(tmp_path)])
     assert result.exit_code == 0
     assert "all done" in result.output
