@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import re
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
 from icmpy.validator import _extract_section
+
+RUN_FLAG = "_ran.txt"
 
 
 @dataclass
@@ -64,7 +67,7 @@ def discover_stages(workspace_path: Path) -> list[StageInfo]:
         title = stage_dir.name.split("_", 1)[1].replace("_", " ").title()
         contract = _parse_stage_contract(stage_dir)
         output_dir = stage_dir / "output"
-        status = "completed" if output_dir.is_dir() and any(output_dir.iterdir()) else "pending"
+        status = "completed" if (output_dir / RUN_FLAG).is_file() else "pending"
         result.append(
             StageInfo(
                 number=number,
@@ -111,3 +114,39 @@ def find_stage(workspace_path: Path, identifier: str) -> StageInfo | None:
             return stage
 
     return None
+
+
+def clear_stage(
+    stage: StageInfo, *, remove_outputs: bool = False, dry_run: bool = False
+) -> list[Path]:
+    """Remove the run flag for *stage* and optionally delete all outputs.
+
+    When *remove_outputs* is False, only the ``_ran.txt`` marker is removed
+    (plus an empty ``output/`` directory). When True, the whole ``output/``
+    directory is removed.
+
+    Returns the list of paths that were (or would be) removed.
+    """
+    output_dir = stage.path / "output"
+    run_flag = output_dir / RUN_FLAG
+    removed: list[Path] = []
+
+    if remove_outputs and output_dir.is_dir():
+        for item in output_dir.rglob("*"):
+            removed.append(item)
+        removed.append(output_dir)
+        if not dry_run:
+            shutil.rmtree(output_dir)
+        return removed
+
+    if run_flag.is_file():
+        removed.append(run_flag)
+        if not dry_run:
+            run_flag.unlink()
+
+    if output_dir.is_dir() and not any(output_dir.iterdir()) and removed:
+        removed.append(output_dir)
+        if not dry_run:
+            output_dir.rmdir()
+
+    return removed
