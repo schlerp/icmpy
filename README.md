@@ -142,6 +142,9 @@ my-workspace/
 | `icmp stage list` | List stages with status |
 | `icmp stage run <stage>` | Assemble and print a stage's context bundle |
 | `icmp stage run next` | Run the first pending stage |
+| `icmp reset` | Clear run flags for all stages (makes them pending) |
+| `icmp reset <stage>` | Clear the run flag for a single stage |
+| `icmp reset --remove-outputs` | Also delete stage `output/` directories |
 | `icmp completion <bash|zsh|fish>` | Print shell completion script |
 | `icmp --version` | Show version |
 
