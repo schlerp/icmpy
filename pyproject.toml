@@ -1,6 +1,6 @@
 [project]
 name = "icmpy"
-version = "0.1.0"
+version = "0.0.3"
 description = "A scaffolding and orchestration tool for the Interpretable Context Methodology (ICM)."
 readme = "README.md"
 authors = [
